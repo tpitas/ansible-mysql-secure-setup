@@ -1,0 +1,73 @@
+---
+- name: Install and Secure MySQL 
+  hosts: webservers
+  become: yes
+
+  tasks:
+
+    - name: Ensure python3-PyMySQL is installed 
+      ansible.builtin.dnf:
+        name: python3-PyMySQL
+        state: present
+
+    - name: Install MySQL server
+      ansible.builtin.dnf:
+        name: mysql-server
+        state: present
+
+    - name: Ensure MySQL is started and enabled
+      ansible.builtin.service:
+        name: mysqld
+        state: started
+        enabled: yes
+
+    - name: Wait for MySQL socket to be available
+      ansible.builtin.wait_for:
+        path: /var/lib/mysql/mysql.sock
+        state: started
+        timeout: 30
+
+    - name: Switch root to mysql_native_password and set password
+      community.mysql.mysql_user:
+        name: root
+        password: "{{ mysql_root_password }}"
+        login_user: root
+        login_password: "{{ mysql_root_password }}"
+        plugin: mysql_native_password
+        host: localhost
+        state: present
+
+    - name: Remove anonymous MySQL users
+      community.mysql.mysql_user:
+        name: ''
+        host_all: yes
+        login_user: root
+        login_password: "{{ mysql_root_password }}"
+        state: absent
+
+    - name: Remove test database
+      community.mysql.mysql_db:
+        name: test
+        login_user: root
+        login_password: "{{ mysql_root_password }}"
+        state: absent
+
+    - name: Ensure privileges are flushed
+      ansible.builtin.shell: mysql -u root -p'{{ mysql_root_password }}' -e "FLUSH PRIVILEGES"
+      args:
+        executable: /bin/bash
+
+# Notes:
+
+# This playbook assumes the root password will be used for login after initial setup.
+
+# mkdir -p group_vars/webservers/vault.yml (Vaulted)
+# mysql_root_password: Passw0rd
+
+# Vault it with:
+# echo 'Passw0rd' > ~/.vault_pass.txt
+# chmod 600 ~/.vault_pass.txt
+# ansible-vault encrypt group_vars/webservers/vault.yml
+
+# run ansible-playbook install-secure-mysql.yml --ask-vault-pass or 
+# ansible-playbook install-secure-mysql.yml --vault-password-file ~/.vault_pass.txt
