@@ -1,6 +1,6 @@
 ---
 - name: Insert data into MySQL sales25 database
-  hosts: slaves
+  hosts: all # to all hosts
   become: yes
   vars_files:
     - group_vars/webservers/vault.yml
