@@ -6,6 +6,20 @@
     - group_vars/webservers/vault.yml
 
   tasks:
+    - name: Ensure MySQL is running
+      ansible.builtin.service:
+        name: mysqld
+        state: started
+        enabled: true
+      become: true
+
+    - name: Ensure sales25 database exists
+      community.mysql.mysql_db:
+        login_user: root
+        login_password: "{{ mysql_root_password }}"
+        name: sales25
+        state: present
+
     - name: Copy SQL insert script to remote host
       ansible.builtin.copy:
         src: /home/devops/mysql_ans/insert_data.sql
@@ -19,5 +33,11 @@
         name: sales25
         state: import
         target: /tmp/insert_data.sql
+      register: import_result
+      failed_when: import_result.msg is defined and 'ERROR' in import_result.msg
+
+    - name: Debug import result
+      ansible.builtin.debug:
+        var: import_result
 
 # run ansible-playbook insert_data.yml -i inventory --ask-vault-pass
