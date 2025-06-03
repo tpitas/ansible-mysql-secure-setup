@@ -1,0 +1,59 @@
+---
+- name: Generate highest sold item report and backup
+  hosts: mhost2
+  become: yes
+  vars_files:
+    - group_vars/webservers/vault.yml  # Contains mysql_root_password
+
+  tasks:
+
+    - name: Ensure MySQL is running
+      ansible.builtin.service:
+        name: mysqld
+        state: started
+        enabled: true
+      become: true
+
+    - name: Ensure sales25 database exists
+      community.mysql.mysql_db:
+        login_user: root
+        login_password: "{{ mysql_root_password }}"
+        name: sales25
+        state: present
+
+    - name: Ensure /var/backups/mysql directory exists
+      ansible.builtin.file:
+        path: /var/backups/mysql
+        state: directory
+        owner: root
+        group: root
+        mode: '0755'
+
+    - name: Deploy SQL report script
+      ansible.builtin.copy:
+        src: highest_item_sold.sql
+        dest: /tmp/highest_item_sold.sql
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Execute the SQL report
+      ansible.builtin.shell: |
+        mysql -u root -p'{{ mysql_root_password }}' sales25< /tmp/highest_item_sold.sql > /var/backups/mysql/highest_item_sold.txt
+      args:
+        executable: /bin/bash
+
+    - name: Set permissions on report file
+      ansible.builtin.file:
+        path: /var/backups/mysql/highest_item_sold.txt
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Backup the report to timestamped copy
+      ansible.builtin.copy:
+        src: /var/backups/mysql/highest_item_sold.txt
+        dest: "/var/backups/mysql/highest_item_sold_{{ ansible_date_time.iso8601_basic_short }}.txt"
+        remote_src: yes
+
+# run ansible-playbook highest_item_sold.yml -i inventory --ask-vault-pass
