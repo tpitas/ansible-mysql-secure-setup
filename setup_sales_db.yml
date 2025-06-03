@@ -1,0 +1,37 @@
+---
+- name: Deploy sales25 schema to MySQL
+  hosts: slaves
+  become: yes
+  vars_files:
+    - group_vars/webservers/vault.yml  # contains mysql_root_password
+
+  tasks:
+
+    - name: Copy SQL schema to remote host
+      ansible.builtin.copy:
+        src: /home/devops/mysql_ans/setup_sales_db.sql    
+        dest: /tmp/setup_sales_db.sql    
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Check that schema file exists on target
+      ansible.builtin.stat:
+        path: /tmp/setup_sales_db.sql
+      register: schema_file
+
+    - name: Fail if schema file is missing
+      ansible.builtin.fail:
+        msg: "Schema file not found on remote host"
+      when: not schema_file.stat.exists
+
+    - name: Import schema into sales25 database
+      community.mysql.mysql_db:
+        login_user: root
+        login_password: "{{ mysql_root_password }}"
+        name: sales25
+        state: import
+        target: /tmp/setup_sales_db.sql
+
+# run ansible-playbook setup_sales_db.yml -i inventory --ask-vault-pass
+
