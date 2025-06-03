@@ -40,4 +40,9 @@
       ansible.builtin.debug:
         var: import_result
 
+    - name: Clean up temporary SQL script # file is removed from the remote host after it's no longer needed
+      ansible.builtin.file:
+        path: /tmp/insert_data.sql
+        state: absent
+
 # run ansible-playbook insert_data.yml -i inventory --ask-vault-pass
