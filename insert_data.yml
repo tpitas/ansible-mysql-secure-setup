@@ -1,0 +1,23 @@
+---
+- name: Insert data into MySQL sales25 database
+  hosts: slaves
+  become: yes
+  vars_files:
+    - group_vars/webservers/vault.yml
+
+  tasks:
+    - name: Copy SQL insert script to remote host
+      ansible.builtin.copy:
+        src: /home/devops/mysql_ans/insert_data.sql
+        dest: /tmp/insert_data.sql
+        mode: '0644'
+
+    - name: Import sample data into sales25 database
+      community.mysql.mysql_db:
+        login_user: root
+        login_password: "{{ mysql_root_password }}"
+        name: sales25
+        state: import
+        target: /tmp/insert_data.sql
+
+# run ansible-playbook insert_data.yml -i inventory --ask-vault-pass
