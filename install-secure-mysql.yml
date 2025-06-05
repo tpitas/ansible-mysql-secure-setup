@@ -71,3 +71,5 @@
 
 # run ansible-playbook install-secure-mysql.yml --ask-vault-pass or 
 # ansible-playbook install-secure-mysql.yml --vault-password-file ~/.vault_pass.txt
+# protect it from being accidentally committed:
+# echo ".vault_pass.txt" >> .gitignore
