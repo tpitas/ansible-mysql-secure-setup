@@ -1,4 +1,8 @@
 ---
+# Notes:
+# configure real SMTP provider
+# run ansible-playbook weekly_top_selling_report.yml -i inventory --ask-vault-pass
+
 - name: Weekly top selling items report
   hosts: all # target all hosts
   become: yes
@@ -7,18 +11,21 @@
     - group_vars/webservers/vault.yml
 
   vars:
-    db_name: test2025
+    db_name: sales25
     db_user: root
-    db_password: "{{ mysql_root_password }}" 
+    db_password: "{{ mysql_root_password }}"
     sql_file: /home/devops/mysql_ans/weekly_top_selling_items.sql
     reports_dir: /var/reports
     report_filename: "weekly_top_sellers_{{ ansible_date_time.date }}.csv"
     report_path: "{{ reports_dir }}/{{ report_filename }}"
+    log_file: "{{ reports_dir }}/report_log_{{ ansible_date_time.date }}.txt"
+    email_recipient: reports@example.com
+    email_sender: "reports@yourdomain.com"
 
   tasks:
-    - name: Debug mysql root password
-      debug:
-        var: mysql_root_password
+    # - name: Debug mysql root password
+    #   debug:
+    #     var: mysql_root_password
 
     - name: Ensure reports directory exists
       file:
@@ -41,3 +48,12 @@
         owner: root
         group: root
         mode: '0644'
+
+    - name: Send report to email 
+      community.general.mail:
+        to: "{{ email_recipient }}"
+        sender: "{{ email_sender }}"
+        subject: "Weekly top selling report"
+        body: "Attached is the weekly sales report."
+        attach:
+          - "{{ report_path }}"
