@@ -1,0 +1,15 @@
+---
+- name: Schedule weekly top selling items report
+  hosts: mhost4
+  become: yes
+
+  tasks:
+    - name: Schedule weekly item report (Sunday at 11:59 PM)
+      cron:
+        name: "weekly top selling items by quantity sold"
+        minute: "59"
+        hour: "23"
+        weekday: "0"   # 0 = Sunday
+        job: "/usr/bin/ansible-playbook /home/devops/mysql_ans/weekly_top_selling_report.yml --vault-password-file /home/devops/.vault_pass.txt"
+
+# run ansible-playbook schedule_weekly_report.yml -i inventory --ask-vault-pass
