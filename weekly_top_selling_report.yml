@@ -1,0 +1,43 @@
+---
+- name: Weekly top selling items report
+  hosts: mhost4
+  become: yes
+
+  vars_files:
+    - group_vars/webservers/vault.yml
+
+  vars:
+    db_name: test2025
+    db_user: root
+    db_password: "{{ mysql_root_password }}" 
+    sql_file: /home/devops/mysql_ans/weekly_top_selling_items.sql
+    reports_dir: /var/reports
+    report_filename: "weekly_top_sellers_{{ ansible_date_time.date }}.csv"
+    report_path: "{{ reports_dir }}/{{ report_filename }}"
+
+  tasks:
+    - name: Debug mysql root password
+      debug:
+        var: mysql_root_password
+
+    - name: Ensure reports directory exists
+      file:
+        path: "{{ reports_dir }}"
+        state: directory
+        owner: root
+        group: root
+        mode: '0755'
+
+    - name: Run weekly top-selling items SQL and export to CSV
+      shell: |
+        mysql -u{{ db_user }} -p{{ db_password }} {{ db_name }} < {{ sql_file }} \
+        | sed 's/\t/,/g' > {{ report_path }}
+      args:
+        executable: /bin/bash
+
+    - name: Set permissions on report file
+      file:
+        path: "{{ report_path }}"
+        owner: root
+        group: root
+        mode: '0644'
