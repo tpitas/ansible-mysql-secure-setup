@@ -23,10 +23,7 @@
     email_sender: "reports@yourdomain.com"
 
   tasks:
-    # - name: Debug mysql root password
-    #   debug:
-    #     var: mysql_root_password
-
+  
     - name: Ensure reports directory exists
       file:
         path: "{{ reports_dir }}"
