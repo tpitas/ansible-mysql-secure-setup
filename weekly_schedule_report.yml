@@ -1,6 +1,6 @@
 ---
 - name: Schedule weekly top selling items report
-  hosts: mhost4
+  hosts: all # target all hosts
   become: yes
 
   tasks:
